@@ -46,6 +46,10 @@ conf = build_conf(gs)
 | `cgHYB+_CGF_OL3_BSC1_10mus_FS_GC_ends` | DNA–RNA hybrid |
 | `Di_hmethyl_methylated-hemi_combine` | Methylated DNA |
 
+## References
+
+1. <a name="ref-cgnaplus"></a>**R. Sharma, J. H. Maddocks, and others**, *cgDNA+: A sequence-dependent coarse-grain model of double-stranded DNA*, (2023).
+
 ## License
 
 GNU General Public License v2 — see [LICENSE](LICENSE).
