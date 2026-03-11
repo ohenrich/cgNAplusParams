@@ -1,3 +1,14 @@
+#!/usr/bin/env python3
+
+import sys,glob,os
+
+num_cores = 1
+os.environ["OMP_NUM_THREADS"] = f"{num_cores}"
+os.environ["OPENBLAS_NUM_THREADS"] = f"{num_cores}"
+os.environ["MKL_NUM_THREADS"] = f"{num_cores}"
+os.environ["VECLIB_MAXIMUM_THREADS"] = f"{num_cores}"
+os.environ["NUMEXPR_NUM_THREADS"] = f"{num_cores}"
+
 
 import numpy as np
 from cgnaplusparams import cgnaplus2rbp, build_conf
