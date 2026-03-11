@@ -32,7 +32,7 @@ result = cgnaplus2rbp(sequence,include_stiffness=True)
 gs     = result["gs"]      # (nbp-1, 6) rigid-body parameters
 stiff  = result["stiff"]   # (6*(nbp-1), 6*(nbp-1)) stiffness matrix
 
-# 3-D pose chain  →  (nbp, 4, 4) SE(3) matrices
+# Chain of 3D poses →  (nbp, 4, 4) SE(3) matrices
 conf = build_conf(gs)
 ```
 
