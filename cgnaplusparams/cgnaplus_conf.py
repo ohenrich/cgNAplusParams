@@ -57,6 +57,7 @@ def cgnaplus_conf(
         orientation: np.ndarray | list | tuple = np.array([0.0, 0.0, 1.0]),
         origin: np.ndarray | list | tuple = np.zeros(3),
         dynamic: np.ndarray | None = None,
+        verbose: bool = False
         ) -> dict[str, np.ndarray]: 
     
     params = cgnap['gs']
@@ -73,10 +74,11 @@ def cgnaplus_conf(
     watson_phosphate_dof_ids = watson_phosphate_dof_indices(param_names=param_names)
     crick_phosphate_dof_ids = crick_phosphate_dof_indices(param_names=param_names)
 
-    print(f"number of inter_bp_dof_ids: {len(inter_bp_dof_ids)}")
-    print(f"number of intra_bp_dof_ids: {len(intra_bp_dof_ids)}")
-    print(f"number of watson_phosphate_dof_ids: {len(watson_phosphate_dof_ids)}")
-    print(f"number of crick_phosphate_dof_ids: {len(crick_phosphate_dof_ids)}")
+    if verbose:
+        print(f"number of inter_bp_dof_ids: {len(inter_bp_dof_ids)}")
+        print(f"number of intra_bp_dof_ids: {len(intra_bp_dof_ids)}")
+        print(f"number of watson_phosphate_dof_ids: {len(watson_phosphate_dof_ids)}")
+        print(f"number of crick_phosphate_dof_ids: {len(crick_phosphate_dof_ids)}")
 
     nbp = len(inter_bp_dof_ids) + 1
     if len(params) != len(param_names):
