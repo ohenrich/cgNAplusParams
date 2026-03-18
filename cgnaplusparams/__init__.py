@@ -1,7 +1,25 @@
 
-from .cgnaplus import constructSeqParms, constructSeqParms_original
+from .cgnaplus_params import (
+    constructSeqParms, 
+    constructSeqParms_original
+)
+
+from .utils.assignment_utils import (
+  cgnaplus_name_assignment, 
+  nonphosphate_dof_map, dof_index, 
+  dof_index_from_name,
+  inter_bp_dof_indices,
+  intra_bp_dof_indices,
+  watson_phosphate_dof_indices,
+  crick_phosphate_dof_indices,
+)
+
 from .rbp import cgnaplus2rbp
-from .build_conf import build_conf
+from .cgnaplus import cgnaplusparams
+from .rbp_conf import rbp_conf
+from .cgnaplus_conf import cgnaplus_conf
+
 from .io.pdb import gen_pdb
 
-from .io.visualization import visualize_chimerax
+from .io.visualize_rbp import visualize_chimerax
+from .io.visualize_cgnaplus import visualize_cgnaplus

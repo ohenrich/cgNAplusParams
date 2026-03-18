@@ -6,12 +6,41 @@ Python interface to the [cgDNA+](#ref-cgnaplus) and cgRNA+ coarse-grained nuclei
 
 - **`constructSeqParms(sequence, parameter_set_name)`** — assembles the cgDNA+/cgRNA+ groundstate vector and stiffness matrix for an arbitrary sequence.
 - **`cgnaplus2rbp(sequence, ...)`** — convenience wrapper that returns the base-pair-step rigid-body parameters (`gs`) and optionally the stiffness matrix in physical units.
-- **`build_conf(rbp_params, ...)`** — converts a sequence of SE(3) rigid-body parameters into a chain of 4×4 homogeneous transformation matrices (one per base pair).
+- **`rbp_conf(rbp_params, ...)`** — Build rigid base pair configuration: converts a sequence of SE(3) rigid-body parameters into a chain of 4×4 homogeneous transformation matrices (one per base pair).
 - **`gen_pdb(...)` / `visualize_chimerax(...)`** — export a coarse-grained structure as PDB or a ChimeraX session.
 
 ## Installation
 
-Install the two git-hosted dependencies first, then the package itself:
+Two dependency libraries are required: **SO3** and **pyConDec**.
+They are bundled as git submodules so you can choose how to provide them.
+
+### Option A — recursive clone (submodule workflow)
+
+```bash
+git clone --recurse-submodules https://github.com/eskoruppa/cgNAplusParams.git
+cd cgNAplusParams
+pip install .
+```
+
+If you already have a plain clone, initialise the submodules afterwards:
+
+```bash
+git submodule update --init --recursive
+pip install .
+```
+
+No extra steps are needed — `cgnaplusparams/_so3.py` and
+`cgnaplusparams/_pycondec.py` detect the local checkouts automatically and
+add them to the Python path.
+
+### Option B — pip (no submodules required)
+
+```bash
+pip install "cgnaplusparams[pip] @ git+https://github.com/eskoruppa/cgNAplusParams.git"
+```
+
+The `[pip]` extra fetches SO3 and pyConDec from GitHub automatically.
+You can also install each piece individually:
 
 ```bash
 pip install git+https://github.com/eskoruppa/SO3.git
@@ -23,7 +52,7 @@ pip install git+https://github.com/eskoruppa/cgNAplusParams.git
 
 ```python
 import numpy as np
-from cgnaplusparams import cgnaplus2rbp, build_conf
+from cgnaplusparams import cgnaplus2rbp, rbp_conf
 
 sequence = "ATACGCTTGCATGC"
 
@@ -33,7 +62,7 @@ gs     = result["gs"]      # (nbp-1, 6) rigid-body parameters
 stiff  = result["stiff"]   # (6*(nbp-1), 6*(nbp-1)) stiffness matrix
 
 # Chain of 3D poses →  (nbp, 4, 4) SE(3) matrices
-conf = build_conf(gs)
+conf = rbp_conf(gs)
 ```
 
 ### Available parameter sets

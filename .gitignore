@@ -21,6 +21,8 @@
 **BENCH*/
 **Bench*
 **BENCH*
+**dev_*
+**dev_*/
 
 # ignore data directories
 **Data/

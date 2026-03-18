@@ -13,6 +13,14 @@ dependencies = [
     "numpy",
     "scipy",
     "numba",
+]
+
+[project.optional-dependencies]
+# Install these only when *not* using the bundled git submodules
+# (cgnaplusparams/SO3/ and cgnaplusparams/pyConDec/).
+# With a recursive clone they are already present and no extra install step
+# is needed.
+pip = [
     "so3 @ git+https://github.com/eskoruppa/SO3.git",
     "pycondec @ git+https://github.com/eskoruppa/pyConDec.git",
 ]

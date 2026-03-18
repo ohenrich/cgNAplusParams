@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import numpy as np
-import so3 
-from pycondec import cond_jit
+from ._so3 import so3
+from ._pycondec import cond_jit
 
-def build_conf(
+def rbp_conf(
         rbp_params: np.ndarray,
         orientation: np.ndarray | list | tuple = np.array([0.0, 0.0, 1.0]),
         origin: np.ndarray | list | tuple = np.zeros(3),
@@ -14,19 +14,23 @@ def build_conf(
         raise ValueError(f"rbp_params must be a 2D array, got shape {rbp_params.shape}")
     if rbp_params.shape[1] != 6:
         raise ValueError(f"rbp_params must have 6 columns (3 for rotation, 3 for translation), got {rbp_params.shape[1]}")
+  
+    first_pose = _build_first_pose(orientation=orientation, origin=origin)
+    gs = so3.se3_euler2rotmat_batch(rbp_params)
+    return _build_chain(first_pose, gs)
 
-    nbps = len(rbp_params)
-    nbp = nbps + 1
-        
-    poses = np.zeros((nbp, 4, 4), dtype=float)
-    poses[0] = np.eye(4)
-    poses[0][:3, 3] = origin
+def _build_first_pose(
+        orientation: np.ndarray | list | tuple = np.array([0.0, 0.0, 1.0]),
+        origin: np.ndarray | list | tuple = np.zeros(3),
+        ) -> np.ndarray:
+    """Build the first pose in the chain based on the specified orientation and origin."""
+    pose = np.eye(4)
+    pose[:3, 3] = origin
     if not np.allclose(orientation, np.array([0.0, 0.0, 1.0])):
         R = so3.rotmat_align_vector(np.array([0.0, 0.0, 1.0]), np.asarray(orientation, dtype=float))
-        poses[0][:3, :3] = R
-    
-    gs = so3.se3_euler2rotmat_batch(rbp_params)
-    return _build_chain(poses[0], gs)
+        pose[:3, :3] = R
+    return pose
+
 
 @cond_jit(nopython=True, cache=True)
 def _build_chain(p0: np.ndarray, gs: np.ndarray) -> np.ndarray:

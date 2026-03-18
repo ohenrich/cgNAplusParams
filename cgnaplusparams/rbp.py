@@ -3,31 +3,13 @@
 from __future__ import annotations
 
 import numpy as np
-import so3
+import scipy as sp
+from ._so3 import so3
 
-from .cgnaplus import constructSeqParms, constructSeqParms_original
+from .cgnaplus_params import constructSeqParms, constructSeqParms_original
+from .utils.assignment_utils import cgnaplus_name_assignment
 
-
-def cgnaplus_name_assignment(
-    seq: str, 
-    dof_names: list[str] = ["W", "x", "C", "y"]
-    ) -> list[str]:
-    """
-    Generates the sequence of contained degrees of freedom for the specified sequence.
-    The default names follow the convention introduced on the cgNA+ website
-    """
-    if len(dof_names) != 4:
-        raise ValueError(
-            f"Requires 4 names for the degrees of freedom. {len(dof_names)} given."
-        )
-    N = len(seq)
-    if N == 0:  
-        return []
-    vars = []
-    for i in range(1, N + 1):
-        vars += [f"{dofn}{i}" for dofn in dof_names]
-    return vars[1:-2]
-
+from .utils.assignment_utils import INTER_BP_PARAM_NAME
 
 def cgnaplus2rbp(
     sequence: str, 
@@ -42,12 +24,12 @@ def cgnaplus2rbp(
     
     gs,stiff = constructSeqParms(sequence,parameter_set_name)
     # gs,stiff = constructSeqParms_original(sequence,parameter_set_name)
-
     names = cgnaplus_name_assignment(sequence)
-    select_names = ["y*"]
+    select_names = [INTER_BP_PARAM_NAME+"*"]
     if include_stiffness:
         stiff = so3.matrix_marginal_assignment(stiff,select_names,names,block_dim=6)
-        stiff = stiff.toarray()
+        if sp.sparse.issparse(stiff):
+            stiff = stiff.toarray()
     gs    = so3.vector_marginal_assignment(gs,select_names,names,block_dim=6)
 
     if remove_factor_five:
@@ -73,11 +55,12 @@ def cgnaplus2rbp(
         if not euler_definition:
             raise ValueError('The group_split option requires euler_definition to be set!')
         if include_stiffness:
-            stiff = so3.algebra2group_stiffmat(gs,stiff,rotation_first=True,translation_as_midstep=True)  
-        gs    = so3.midstep2triad(gs)
-    
+            gs,stiff = so3.algebra2group_params(gs, stiff, rotation_first=True, translation_as_midstep=True, optimized=True) 
+        else:
+            gs = so3.midstep2triad(gs)
+
     if rotations_only:
-        gs    = so3.vector_rotmarginal(so3.vecs2statevec(gs))
+        gs = so3.vector_rotmarginal(so3.vecs2statevec(gs))
         if include_stiffness:
             stiff = so3.matrix_rotmarginal(stiff)
 

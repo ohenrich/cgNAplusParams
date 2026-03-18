@@ -1,0 +1,183 @@
+from __future__ import annotations
+import numpy as np
+from ..naming_conventions import *
+
+
+def cgnaplus_name_assignment(
+    seq: str, 
+    param_names: list[str] = PARAM_BASENAMES
+    ) -> list[str]:
+    """
+    Generates the sequence of contained degrees of freedom for the specified sequence.
+    The default names follow the convention introduced on the cgNA+ website
+    """
+    if len(param_names) != 4:
+        raise ValueError(
+            f"Requires 4 names for the degrees of freedom. {len(param_names)} given."
+        )
+    N = len(seq)
+    if N == 0:  
+        return []
+    vars = []
+    for i in range(0, N):
+        vars += [f"{dofn}{i}" for dofn in param_names]
+    return vars[1:-2]
+
+def nonphosphate_dof_map(seq: str, param_names: list[str] | None = None) -> np.ndarray:
+    """
+    Returns a boolean mask over the DOF list indicating which entries are
+    non-phosphate (i.e. inter-bp or intra-bp) parameters.
+
+    A DOF is considered non-phosphate if its name contains 'X' or 'Y',
+    corresponding to the inter- and intra-bp parameter names defined by
+    INTER_BP_PARAM_NAME and INTRA_BP_PARAM_NAME.
+
+    Args:
+        seq: Nucleotide sequence string.
+        param_names: Optional list of DOF names. If None, generated from seq
+            via cgnaplus_name_assignment.
+
+    Returns:
+        Boolean array of shape (len(param_names),) that is True for non-phosphate
+        DOFs and False for base-to-phosphate DOFs.
+    """
+    if param_names is None:
+        param_names = cgnaplus_name_assignment(seq)
+    map = ['X' in name or 'Y' in name for name in param_names]
+    return np.array(map, dtype=bool)
+
+
+def dof_index_from_name(
+    dof_name: str,
+    dof_basenames: list[str] = PARAM_BASENAMES,
+) -> int | None:
+    """
+    Deterministically compute the index of a DOF name in the cgnaplus_name_assignment
+    output without searching the list.
+
+    Exploits the fixed repeating structure of cgnaplus_name_assignment: for each
+    base position i the four DOFs (param_names[0..3]) are laid out consecutively in
+    vars, and the final list is vars[1:-2].  The sliced index of a DOF with prefix
+    p (at position j in param_names) and numeral i is therefore 4*i + j - 1.
+
+    Args:
+        dof_name: DOF name string, e.g. ``"x3"`` or ``"W1"``.
+        param_names: The four DOF-type name prefixes used during name assignment.
+            Defaults to PARAM_BASENAMES.
+
+    Returns:
+        Integer index in the cgnaplus_name_assignment output list, or None if
+        the name cannot be parsed or corresponds to a trimmed entry (e.g. ``"W0"``).
+    """
+    # Split trailing digits to recover prefix and base position index
+    split = len(dof_name)
+    while split > 0 and dof_name[split - 1].isdigit():
+        split -= 1
+    prefix, numeral = dof_name[:split], dof_name[split:]
+    if not numeral:
+        return None
+    bp_index = int(numeral)
+    try:
+        j = dof_basenames.index(prefix)
+    except ValueError:
+        return None
+    idx = 4 * bp_index + j - 1  # -1 for vars[1:-2] offset
+    return idx if idx >= 0 else None
+
+
+def dof_index(dof_name: str, param_names: list[str] | None = None) -> int | None:
+    """
+    Returns the index of a DOF name in the DOF list, or None if not found.
+
+    Args:
+        dof_name: The DOF name to look up.
+        param_names: Optional list of DOF names to search in. If None, generated
+            from seq via cgnaplus_name_assignment.
+
+    Returns:
+        Integer index of dof_name in param_names, or None if dof_name is not
+        present in the list.
+    """
+    if param_names is None:
+        return dof_index_from_name(dof_name)
+
+    try:
+        return param_names.index(dof_name)
+    except ValueError:
+        return None
+    
+def inter_bp_dof_indices(param_names: list[str]) -> np.ndarray:
+    """
+    Returns the indices of inter-base-pair DOFs in the DOF list.
+
+    Inter-base-pair DOFs are identified by the presence of the substring defined
+    in INTER_BP_PARAM_NAME (default "X") in their names.
+
+    Args:
+        param_names: List of DOF names.
+
+    Returns:
+        Numpy array of integer indices corresponding to inter-base-pair DOFs.
+    """
+    return np.array([i for i, name in enumerate(param_names) if INTER_BP_PARAM_NAME in name], dtype=int)
+
+def intra_bp_dof_indices(param_names: list[str]) -> np.ndarray:
+    """
+    Returns the indices of intra-base-pair DOFs in the DOF list.
+
+    Intra-base-pair DOFs are identified by the presence of the substring defined
+    in INTRA_BP_PARAM_NAME (default "Y") in their names.
+
+    Args:
+        param_names: List of DOF names.
+
+    Returns:
+        Numpy array of integer indices corresponding to intra-base-pair DOFs.
+    """
+    return np.array([i for i, name in enumerate(param_names) if INTRA_BP_PARAM_NAME in name], dtype=int)
+
+def watson_phosphate_dof_indices(param_names: list[str]) -> np.ndarray:
+    """
+    Returns the indices of Watson-phosphate DOFs in the DOF list.
+
+    Watson-phosphate DOFs are identified by the presence of the substring defined
+    in B2P_WATSON_PARAM_NAME (default "W") in their names.
+
+    Args:
+        param_names: List of DOF names.
+
+    Returns:
+        Numpy array of integer indices corresponding to Watson-phosphate DOFs.
+    """
+    return np.array([i for i, name in enumerate(param_names) if B2P_WATSON_PARAM_NAME in name], dtype=int)
+
+def crick_phosphate_dof_indices(param_names: list[str]) -> np.ndarray:
+    """
+    Returns the indices of Crick-phosphate DOFs in the DOF list.
+
+    Crick-phosphate DOFs are identified by the presence of the substring defined
+    in B2P_CRICK_PARAM_NAME (default "C") in their names.
+
+    Args:
+        param_names: List of DOF names.
+
+    Returns:
+        Numpy array of integer indices corresponding to Crick-phosphate DOFs.
+    """
+    return np.array([i for i, name in enumerate(param_names) if B2P_CRICK_PARAM_NAME in name], dtype=int)
+
+def phosphate_dof_indices(param_names: list[str]) -> np.ndarray:
+    """
+    Returns the indices of all base-to-phosphate DOFs in the DOF list.
+
+    Base-to-phosphate DOFs are identified by the presence of either of the
+    substrings defined in B2P_WATSON_PARAM_NAME (default "W")
+    or B2P_CRICK_PARAM_NAME (default "C") in their names.
+
+    Args:
+        param_names: List of DOF names.
+
+    Returns:
+        Numpy array of integer indices corresponding to base-to-phosphate DOFs.
+    """
+    return np.array([i for i, name in enumerate(param_names) if (B2P_WATSON_PARAM_NAME in name) or (B2P_CRICK_PARAM_NAME in name)], dtype=int)

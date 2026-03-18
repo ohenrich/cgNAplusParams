@@ -5,7 +5,7 @@ import os
 import warnings
 import numpy as np
 # from ..IOPolyMC import iopolymc as iopmc
-from ..build_conf import build_conf
+from ..rbp_conf import rbp_conf
 from .pdb import gen_pdb
 1
 # from .. utils.path_methods import create_relative_path
@@ -52,7 +52,7 @@ def visualize_chimerax(
         os.makedirs(outdir)
         
     if poses is None:
-        poses = build_conf(shape_params)
+        poses = rbp_conf(shape_params)
             
     # generate pdb file
     pdbfn = base_fn.with_suffix('.pdb')
@@ -105,7 +105,7 @@ def visualize_pdb(
         os.makedirs(outdir)
         
     if poses is None:
-        poses = build_conf(shape_params)
+        poses = rbp_conf(shape_params)
             
     # generate pdb file
     pdbfn = base_fn.with_suffix('.pdb')
@@ -143,7 +143,7 @@ def cgvisual(
         os.makedirs(outdir)
         
     # calculate triads
-    poses = build_conf(shape_params)
+    poses = rbp_conf(shape_params)
             
     # generate pdb file
     pdbfn = base_fn.with_suffix('.pdb')
@@ -299,7 +299,7 @@ def _triads2bild(
     return fn
     
 def params2pdb(fn: Path | str, params: np.ndarray, seq: str) -> None:
-    poses2pdb(fn,build_conf(params),seq)
+    poses2pdb(fn,rbp_conf(params),seq)
     
 def poses2pdb(
     fn: Path | str, 
