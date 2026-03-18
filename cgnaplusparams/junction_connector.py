@@ -300,6 +300,7 @@ def junction_mapper(first_name: str, second_name: str, param_names: list[str]) -
         'indices': indices,
         'styles': styles,
         'senses': senses,
+        'junctions': juncs,
     }
 
 
