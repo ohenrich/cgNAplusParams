@@ -52,9 +52,6 @@ class cgNAplusConf:
 
 
 
-
-
-
 def cgnaplus_conf(
         cgnap: dict[str, np.ndarray | bool | str],
         orientation: np.ndarray | list | tuple = np.array([0.0, 0.0, 1.0]),
@@ -64,7 +61,7 @@ def cgnaplus_conf(
     
     params = cgnap['gs']
     param_names = cgnap['param_names']
-    aligned_strands = cgnap['aligned_strands']
+    # aligned_strands = cgnap['aligned_strands']
 
     if dynamic is not None:
         if dynamic.shape != params.shape:
