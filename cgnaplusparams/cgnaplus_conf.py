@@ -57,11 +57,17 @@ def cgnaplus_conf(
         cgnap: dict[str, np.ndarray | bool | str],
         orientation: np.ndarray | list | tuple = np.array([0.0, 0.0, 1.0]),
         origin: np.ndarray | list | tuple = np.zeros(3),
+        dynamic: np.ndarray | None = None,
         ) -> dict[str, np.ndarray]: 
     
     params = cgnap['gs']
     param_names = cgnap['param_names']
     aligned_strands = cgnap['aligned_strands']
+
+    if dynamic is not None:
+        if dynamic.shape != params.shape:
+            raise ValueError(f"dynamic shape {dynamic.shape} does not match params shape {params.shape}.")
+        ds = so3.se3_euler2rotmat_batch(dynamic)
 
     inter_bp_dof_ids = inter_bp_dof_indices(param_names=param_names)
     intra_bp_dof_ids = intra_bp_dof_indices(param_names=param_names)
@@ -83,6 +89,9 @@ def cgnaplus_conf(
     
     # Convert params to SE(3) group elements (4x4 transformation matrices)
     gs = so3.se3_euler2rotmat_batch(params)
+    if dynamic is not None:
+        for i in range(len(gs)):
+            gs[i] = gs[i] @ ds[i]
 
     # generate bp poses
     bp_poses = _build_chain(_build_first_pose(orientation=orientation, origin=origin), gs[inter_bp_dof_ids])
