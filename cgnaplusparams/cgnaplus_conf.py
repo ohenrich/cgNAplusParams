@@ -19,12 +19,14 @@ class cgNAplusConf:
         orientation: np.ndarray | list | tuple = np.array([0.0, 0.0, 1.0]),
         origin: np.ndarray | list | tuple = np.zeros(3),
         dynamic: np.ndarray | None = None,
+        verbose: bool = False,
     ) -> None:
         self.cgnap = cgnap
         self.orientation = orientation
         self.origin = origin
         self.dynamic = dynamic
-        self.conf = cgnaplus_conf(cgnap, orientation=orientation, origin=origin, dynamic=dynamic)
+        self.verbose = verbose
+        self.conf = cgnaplus_conf(cgnap, orientation=orientation, origin=origin, dynamic=dynamic, verbose=verbose)
 
         self.poses = self.conf["poses"]
         self.bp_poses = self.conf["bp_poses"]
