@@ -11,18 +11,25 @@ from cgnaplusparams import cgnaplus2rbp, rbp_conf
 from cgnaplusparams import visualize_chimerax
 from cgnaplusparams import curvature
 
-nbp = 32
+nbp = 147
 TARGET_CURVATURE = 0.08
 base_fn = 'Curvature/test'
 
 NTERM = 50
-POP_SIZE = 500
-NGEN = 300
+POP_SIZE = 1000
+NGEN = 1000
 CXPB = 0.5
-MUTPB = 1.00
-NHOF = 2
+MUTPB = 0.75
+NHOF = 3
 TOURSIZE = 7
 INDPB = 0.08
+MAX_INDPB = 0.3
+STAGNATION_THRESHOLD = 20
+MUTATION_MULTIPLIER = 1.5
+POP_BOOST_THRESHOLD = 30
+POP_BOOST = 0.1
+
+current_indpb = INDPB
 
 BASE_MAPPING = ['A', 'C', 'G', 'T']
 
@@ -57,10 +64,10 @@ def main():
     pop = toolbox.population(n=POP_SIZE)
     hof = tools.HallOfFame(NHOF)
     
-    t1 = time.time()
-    
     no_improvement = 0
     best_fitness_so_far = 0
+
+    t1 = time.time()
     
     for gen in range(NGEN):
         offspring = toolbox.select(pop, POP_SIZE)
@@ -79,11 +86,23 @@ def main():
                 toolbox.mutate(mutant)
                 del mutant.fitness.values
         
-        # PARALLEL EVALUATION HERE
+        # Parallel evaluation here
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
         fitnesses = toolbox.map(toolbox.evaluate, invalid_ind)  # uses pool.map
         for ind, fit in zip(invalid_ind, fitnesses):
             ind.fitness.values = fit
+
+        if no_improvement >= POP_BOOST_THRESHOLD:
+            print(f"Boosting population diversity by {POP_BOOST*100}% (gen {gen+1}, stagnation {no_improvement})")
+            # Sort by fitness, replace worst POP_BOOST
+            num_to_replace = int(POP_SIZE * POP_BOOST)
+            sorted_pop = sorted(offspring, key=lambda x: x.fitness.values[0])
+            worst_indices = [i for i, ind in enumerate(offspring) if ind in sorted_pop[:num_to_replace]]
+            
+            # Replace worst with fresh random + IMMEDIATELY evaluate
+            for idx in worst_indices:
+                offspring[idx] = toolbox.individual()
+                offspring[idx].fitness.values = toolbox.evaluate(offspring[idx])  # EVALUATED!
         
         pop[:] = offspring
         hof.update(pop)
@@ -92,9 +111,18 @@ def main():
         if current_best > best_fitness_so_far + 1e-6:
             best_fitness_so_far = current_best
             no_improvement = 0
+            current_indpb = INDPB
         else:
             no_improvement += 1
-        
+
+            # boost individual mutation rate
+            if no_improvement >= STAGNATION_THRESHOLD:
+                current_indpb = min(current_indpb * 1.5, MAX_INDPB)
+                # Re-register with new rate
+                toolbox.unregister("mutate")
+                toolbox.register("mutate", tools.mutUniformInt, low=0, up=3, indpb=current_indpb)
+                print(f"Increased mutation rate indpb={current_indpb:.3f} (gen {gen+1}, stagnation {no_improvement})")
+
         print(f"Gen {gen+1}: Best={current_best:.4f}, No imp={no_improvement}")
         
         if no_improvement >= NTERM:
@@ -111,7 +139,7 @@ def main():
     final_pop_fitness = [ind.fitness.values[0] for ind in pop]  # Current population
     hof_fitness = [ind.fitness.values[0] for ind in hof]
     final_fitness = final_pop_fitness + hof_fitness
-    print("Final fitness (top 10):", sorted(final_fitness,reverse=True)[:5])
+    print("Final fitness (top 10):", sorted(final_fitness,reverse=True)[:10])
     
     best_ind = hof[0]
     seq = ''.join(BASE_MAPPING[int(gene)] for gene in best_ind)
