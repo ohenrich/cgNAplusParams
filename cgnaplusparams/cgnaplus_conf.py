@@ -7,29 +7,81 @@ from ._pycondec import cond_jit
 
 from .rbp_conf import _build_first_pose, _build_chain
 from .utils.assignment_utils import inter_bp_dof_indices, intra_bp_dof_indices, watson_phosphate_dof_indices, crick_phosphate_dof_indices
-from .utils.assignment_utils import INTER_BP_PARAM_NAME, INTRA_BP_PARAM_NAME, B2P_WATSON_PARAM_NAME, B2P_CRICK_PARAM_NAME
 from .utils.assignment_utils import dof_index
+from .naming_conventions import INTER_BP_PARAM_NAME, INTRA_BP_PARAM_NAME, B2P_WATSON_PARAM_NAME, B2P_CRICK_PARAM_NAME
+from .naming_conventions import WATSON_BASE_NAME, CRICK_BASE_NAME, WATSON_PHOSPHATE_NAME, CRICK_PHOSPHATE_NAME, BP_NAME
+
+
+class cgNAplusConf:
+
+    def __init__(
+        self,
+        cgnap: dict[str, np.ndarray | bool | str],
+        orientation: np.ndarray | list | tuple = np.array([0.0, 0.0, 1.0]),
+        origin: np.ndarray | list | tuple = np.zeros(3),
+        dynamic: np.ndarray | None = None,
+        verbose: bool = False,
+    ) -> None:
+        self.cgnap = cgnap
+        self.orientation = orientation
+        self.origin = origin
+        self.dynamic = dynamic
+        self.verbose = verbose
+        self.conf = cgnaplus_conf(cgnap, orientation=orientation, origin=origin, dynamic=dynamic, verbose=verbose)
+
+        self.poses = self.conf["poses"]
+        self.bp_poses = self.conf["bp_poses"]
+        self.watson_base_poses = self.conf["watson_base_poses"]
+        self.crick_base_poses = self.conf["crick_base_poses"]
+        self.watson_phosphate_poses = self.conf["watson_phosphate_poses"]
+        self.crick_phosphate_poses = self.conf["crick_phosphate_poses"]
+        self._set_named_poses()
+
+    def _set_named_poses(self) -> None:
+        """Set attributes like self.inter_bp_poses, self.intra_bp_poses, etc. based on the param_names."""
+        self.named_poses = {}
+        for i, pose in enumerate(self.bp_poses):
+            self.named_poses[f"{BP_NAME}{i}"] = pose
+        for i, pose in enumerate(self.watson_base_poses):
+            self.named_poses[f"{WATSON_BASE_NAME}{i}"] = pose
+        for i, pose in enumerate(self.crick_base_poses):
+            self.named_poses[f"{CRICK_BASE_NAME}{i}"] = pose
+        for i, pose in enumerate(self.watson_phosphate_poses):
+            if np.any(pose):  # Check if the pose is not all zeros (i.e., it is contained)
+                self.named_poses[f"{WATSON_PHOSPHATE_NAME}{i}"] = pose
+        for i, pose in enumerate(self.crick_phosphate_poses):
+            if np.any(pose):  # Check if the pose is not all zeros (i.e., it is contained)
+                self.named_poses[f"{CRICK_PHOSPHATE_NAME}{i}"] = pose
+
 
 
 def cgnaplus_conf(
         cgnap: dict[str, np.ndarray | bool | str],
         orientation: np.ndarray | list | tuple = np.array([0.0, 0.0, 1.0]),
         origin: np.ndarray | list | tuple = np.zeros(3),
+        dynamic: np.ndarray | None = None,
+        verbose: bool = False
         ) -> dict[str, np.ndarray]: 
     
     params = cgnap['gs']
     param_names = cgnap['param_names']
-    aligned_strands = cgnap['aligned_strands']
+    # aligned_strands = cgnap['aligned_strands']
+
+    if dynamic is not None:
+        if dynamic.shape != params.shape:
+            raise ValueError(f"dynamic shape {dynamic.shape} does not match params shape {params.shape}.")
+        ds = so3.se3_euler2rotmat_batch(dynamic)
 
     inter_bp_dof_ids = inter_bp_dof_indices(param_names=param_names)
     intra_bp_dof_ids = intra_bp_dof_indices(param_names=param_names)
     watson_phosphate_dof_ids = watson_phosphate_dof_indices(param_names=param_names)
     crick_phosphate_dof_ids = crick_phosphate_dof_indices(param_names=param_names)
 
-    print(f"number of inter_bp_dof_ids: {len(inter_bp_dof_ids)}")
-    print(f"number of intra_bp_dof_ids: {len(intra_bp_dof_ids)}")
-    print(f"number of watson_phosphate_dof_ids: {len(watson_phosphate_dof_ids)}")
-    print(f"number of crick_phosphate_dof_ids: {len(crick_phosphate_dof_ids)}")
+    if verbose:
+        print(f"number of inter_bp_dof_ids: {len(inter_bp_dof_ids)}")
+        print(f"number of intra_bp_dof_ids: {len(intra_bp_dof_ids)}")
+        print(f"number of watson_phosphate_dof_ids: {len(watson_phosphate_dof_ids)}")
+        print(f"number of crick_phosphate_dof_ids: {len(crick_phosphate_dof_ids)}")
 
     nbp = len(inter_bp_dof_ids) + 1
     if len(params) != len(param_names):
@@ -41,7 +93,11 @@ def cgnaplus_conf(
     
     # Convert params to SE(3) group elements (4x4 transformation matrices)
     gs = so3.se3_euler2rotmat_batch(params)
-
+    if dynamic is not None:
+        for i in range(len(gs)):
+            gs[i] = gs[i] @ ds[i]
+        params = so3.se3_rotmat2euler_batch(gs)
+        
     # generate bp poses
     bp_poses = _build_chain(_build_first_pose(orientation=orientation, origin=origin), gs[inter_bp_dof_ids])
 

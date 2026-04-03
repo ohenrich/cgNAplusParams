@@ -17,10 +17,10 @@ from .utils.assignment_utils import (
 from .rbp import cgnaplus2rbp
 from .cgnaplus import cgnaplusparams
 from .rbp_conf import rbp_conf
-from .cgnaplus_conf import cgnaplus_conf
+from .cgnaplus_conf import cgnaplus_conf, cgNAplusConf
 
 from .io.pdb import gen_pdb
-
 from .io.visualize_rbp import visualize_chimerax
 from .io.visualize_cgnaplus import visualize_cgnaplus
 from .observables.curvature import curvature
+from .junction_connector import junction_mapper, vertices2junctions
