@@ -11,11 +11,11 @@ from cgnaplusparams import cgnaplus2rbp, rbp_conf
 from cgnaplusparams import visualize_chimerax
 from cgnaplusparams import curvature
 
-nbp = 147
-TARGET_CURVATURE = 0.08
+nbp = 360
+TARGET_CURVATURE = 0.175
 base_fn = 'Curvature/test'
 
-NTERM = 50
+NTERM = 30
 POP_SIZE = 1000
 NGEN = 1000
 CXPB = 0.5
@@ -24,9 +24,9 @@ NHOF = 3
 TOURSIZE = 7
 INDPB = 0.08
 MAX_INDPB = 0.3
-STAGNATION_THRESHOLD = 20
+STAGNATION_THRESHOLD = 10
 MUTATION_MULTIPLIER = 1.5
-POP_BOOST_THRESHOLD = 30
+POP_BOOST_THRESHOLD = 20
 POP_BOOST = 0.1
 
 current_indpb = INDPB

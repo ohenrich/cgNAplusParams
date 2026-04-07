@@ -61,9 +61,29 @@ def _triads2bild(
         t_hat = np.append(t_hat, np.array([tau[:,2]]), axis=0)
         r = np.append(r, np.array([tau[:,3]]), axis=0)
 
-    # calculate curvature based on first and last triad
+    nposes = len(poses)
+    kappa = 0
+
+    dtheta2 = 0.5*np.acos(np.dot(t_hat[-1],t_hat[nposes//8])) # half angle
+    dr = np.linalg.norm(r[-1]-r[nposes//2]) # distance between triad origins
+    kappa += 2.0/dr*np.sin(dtheta2)  # curvature
+
+    dtheta2 = 0.5*np.acos(np.dot(t_hat[0],t_hat[nposes//8])) # half angle
+    dr = np.linalg.norm(r[0]-r[nposes//2]) # distance between triad origins
+    kappa += 2.0/dr*np.sin(dtheta2)  # curvature
+
+    dtheta2 = 0.5*np.acos(np.dot(t_hat[-1],t_hat[nposes//2])) # half angle
+    dr = np.linalg.norm(r[-1]-r[nposes//2]) # distance between triad origins
+    kappa += 2.0/dr*np.sin(dtheta2)  # curvature
+
+    dtheta2 = 0.5*np.acos(np.dot(t_hat[0],t_hat[nposes//2])) # half angle
+    dr = np.linalg.norm(r[0]-r[nposes//2]) # distance between triad origins
+    kappa += 2.0/dr*np.sin(dtheta2)  # curvature
+
     dtheta2 = 0.5*np.acos(np.dot(t_hat[0],t_hat[-1])) # half angle
-    dr = np.linalg.norm(r[-1]-r[0]) # distance between triad origins
-    kappa = 2.0/dr*np.sin(dtheta2)  # curvature
+    dr = np.linalg.norm(r[0]-r[-1]) # distance between triad origins
+    kappa += 2.0/dr*np.sin(dtheta2)  # curvature
+
+    kappa /= 5
 
     return kappa
