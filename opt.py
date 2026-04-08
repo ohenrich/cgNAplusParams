@@ -12,21 +12,21 @@ from cgnaplusparams import visualize_chimerax
 from cgnaplusparams import curvature
 
 nbp = 360
-TARGET_CURVATURE = 0.06
+TARGET_CURVATURE = 0.07
 base_fn = 'Curvature/test'
 
-NTERM = 30
+NTERM = 100
 POP_SIZE = 1000
 NGEN = 1000
 CXPB = 0.5
 MUTPB = 0.75
 NHOF = 3
 TOURSIZE = 7
-INDPB = 0.08
+INDPB = 0.1
 MAX_INDPB = 0.3
 STAGNATION_THRESHOLD = 10
 MUTATION_MULTIPLIER = 1.5
-POP_BOOST_THRESHOLD = 20
+POP_BOOST_THRESHOLD = 100
 POP_BOOST = 0.1
 
 current_indpb = INDPB
@@ -115,7 +115,7 @@ def main():
 
             # boost individual mutation rate
             if no_improvement >= STAGNATION_THRESHOLD:
-                current_indpb = min(current_indpb * 1.5, MAX_INDPB)
+                current_indpb = min(current_indpb * MUTATION_MULTIPLIER, MAX_INDPB)
                 toolbox.unregister("mutate")
                 toolbox.register("mutate", tools.mutUniformInt, low=0, up=3, indpb=current_indpb)
                 print(f"Increased mutation rate indpb={current_indpb:.3f} (gen {gen+1}, stagnation {no_improvement})")

@@ -12,17 +12,22 @@ from cgnaplusparams import visualize_chimerax
 from cgnaplusparams import curvature, distance
 
 nbp = 360
-TARGET_CURVATURE = 0.06
+TARGET_CURVATURE = 0.07
 TARGET_DISTANCE = 2.0
 base_fn = 'Multi/test'
 
-NTERM = 200
+NTERM = 100
 POP_SIZE = 3000
-NGEN = 3000
+NGEN = 2000
 CXPB = 0.5
 MUTPB = 0.75
 NHOF = 3
-INDPB = 0.09
+INDPB = 0.1
+MAX_INDPB = 0.3
+STAGNATION_THRESHOLD = 10
+MUTATION_MULTIPLIER = 1.5
+
+current_indpb = INDPB
 
 BASE_MAPPING = ['A', 'C', 'G', 'T']
 
@@ -50,7 +55,7 @@ def evaluate(individual):
 toolbox.register("evaluate", evaluate)
 toolbox.register("select", tools.selNSGA2)  # NSGA-II selection
 toolbox.register("mate", tools.cxTwoPoint)
-toolbox.register("mutate", tools.mutUniformInt, low=0, up=3, indpb=INDPB)
+toolbox.register("mutate", tools.mutUniformInt, low=0, up=3, indpb=current_indpb)
 
 def main():
     pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
@@ -100,14 +105,22 @@ def main():
         hof.update(pop)
         pareto_front.update(pop)
         
-        current_best = min(ind.fitness.values[0] for ind in pareto_front)
-        if current_best < best_cost_so_far - 1e-6:
-            best_cost_so_far = current_best
+        current_best1 = min(ind.fitness.values[0] for ind in pareto_front)
+        current_best2 = min(ind.fitness.values[1] for ind in pareto_front)
+        if current_best1 < best_cost_so_far - 1e-6:
+            best_cost_so_far = current_best1
             no_improvement = 0
+            current_indpb = INDPB
         else:
             no_improvement += 1
 
-        print(f"Gen {gen+1}: Best cost={current_best:.6f}, Pareto={len(pareto_front)}, No imp={no_improvement}")
+            # boost individual mutation rate
+            if no_improvement >= STAGNATION_THRESHOLD:
+                current_indpb = min(current_indpb * MUTATION_MULTIPLIER, MAX_INDPB)
+                toolbox.unregister("mutate")
+                toolbox.register("mutate", tools.mutUniformInt, low=0, up=3, indpb=current_indpb)
+                print(f"Increased mutation rate indpb={current_indpb:.3f} (gen {gen+1}, stagnation {no_improvement})")
+        print(f"Gen {gen+1}: Best cost: obj1={current_best1:.6f}, obj2={current_best2:.6f}, Pareto={len(pareto_front)}, No imp={no_improvement}")
         
         if no_improvement >= NTERM:
             print(f"Early stop at gen {gen+1}")
@@ -137,7 +150,7 @@ def main():
     kappa = curvature(base_fn, seq, shape_params=result["gs"], cg=1)
     dist = distance(base_fn, seq, shape_params=result["gs"], cg=1)
     
-    print(f"\nBest by kappa: {seq[:60]}...")
+    print(f"\nBest by kappa: {seq}")
     print(f"  kappa={kappa:.6f} (target={TARGET_CURVATURE}, err={best_ind.fitness.values[0]:.6f})")
     print(f"  dist={dist:.1f}  (target={TARGET_DISTANCE}, err={best_ind.fitness.values[1]:.6f})")
     
